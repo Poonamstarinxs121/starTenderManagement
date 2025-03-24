@@ -1,0 +1,131 @@
+import { useState, useEffect } from 'react';
+import { Link, useLocation } from 'wouter';
+import useMobile from '@/lib/hooks/useMobile';
+
+interface SidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export function Sidebar({ isOpen, onClose }: SidebarProps) {
+  const [location] = useLocation();
+  const isMobile = useMobile();
+  
+  // Close sidebar on mobile when route changes
+  useEffect(() => {
+    if (isMobile && isOpen) {
+      onClose();
+    }
+  }, [location, isMobile, isOpen, onClose]);
+
+  // Add/remove body scroll based on sidebar open state on mobile
+  useEffect(() => {
+    if (isMobile && isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isMobile, isOpen]);
+
+  const sidebarLinks = [
+    { href: '/', icon: 'dashboard', label: 'Dashboard', section: 'Main' },
+    { href: '/leads', icon: 'contact_page', label: 'Lead Management', section: 'Business' },
+    { href: '/tenders', icon: 'description', label: 'Tender Management', section: 'Business' },
+    { href: '/projects', icon: 'engineering', label: 'Project Tracking', section: 'Business' },
+    { href: '/documents', icon: 'folder', label: 'Document Management', section: 'Business' },
+    { href: '/users', icon: 'people', label: 'User Management', section: 'Administration' },
+    { href: '/settings', icon: 'settings', label: 'Settings', section: 'Administration' },
+  ];
+
+  const sidebarClasses = `
+    fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-md transition-transform duration-300 
+    ${isOpen || !isMobile ? 'translate-x-0' : '-translate-x-full'} 
+    lg:translate-x-0 lg:static lg:z-0
+  `;
+
+  return (
+    <>
+      {/* Backdrop for mobile */}
+      {isMobile && isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40"
+          onClick={onClose}
+        />
+      )}
+      
+      <aside className={sidebarClasses}>
+        <div className="p-4 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <h1 className="text-xl font-semibold text-gray-800">BMS</h1>
+            {isMobile && (
+              <button 
+                onClick={onClose}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <span className="material-icons">close</span>
+              </button>
+            )}
+          </div>
+        </div>
+        
+        <div className="flex flex-col h-[calc(100%-64px)]">
+          <div className="flex-1 overflow-y-auto py-4">
+            {/* Group sidebar links by section */}
+            {['Main', 'Business', 'Administration'].map(section => {
+              const sectionLinks = sidebarLinks.filter(link => link.section === section);
+              
+              return (
+                <div key={section}>
+                  <div className="px-4 mb-3 mt-2">
+                    <p className="text-xs uppercase tracking-wider text-gray-500 font-semibold">
+                      {section}
+                    </p>
+                  </div>
+                  
+                  {sectionLinks.map(link => {
+                    const isActive = location === link.href || 
+                                    (link.href !== '/' && location.startsWith(link.href));
+                    
+                    return (
+                      <Link 
+                        key={link.href} 
+                        href={link.href}
+                        className={`flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100
+                          ${isActive ? 'bg-blue-50 border-l-3 border-primary' : ''}
+                        `}
+                      >
+                        <span className={`material-icons mr-3 ${isActive ? 'text-primary' : 'text-gray-600'}`}>
+                          {link.icon}
+                        </span>
+                        {link.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+          
+          {/* User info at bottom */}
+          <div className="border-t border-gray-200 p-4">
+            <div className="flex items-center">
+              <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center mr-3">
+                <span className="material-icons text-sm text-gray-600">person</span>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-700">John Doe</p>
+                <p className="text-xs text-gray-500">Administrator</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </>
+  );
+}
+
+export default Sidebar;
