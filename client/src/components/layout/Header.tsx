@@ -30,17 +30,18 @@ export function Header({ onMenuClick }: HeaderProps) {
         <div className="flex items-center">
           <button 
             onClick={onMenuClick}
-            className="mr-2 text-gray-600"
+            className="mr-3 p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md lg:mr-2"
+            aria-label="Toggle Menu"
           >
             <Menu size={24} />
           </button>
           
-          <form onSubmit={handleSearch} className="relative">
+          <form onSubmit={handleSearch} className="relative hidden sm:block">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
             <Input
               type="search"
               placeholder="Search..."
-              className="w-[200px] sm:w-[300px] pl-8"
+              className="w-[240px] md:w-[300px] pl-8"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
