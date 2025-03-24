@@ -7,7 +7,9 @@ interface MainLayoutProps {
 }
 
 export function MainLayout({ children }: MainLayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Initialize sidebar as open for desktop, closed for mobile
+  const isMobile = window.innerWidth < 1024;
+  const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   
   const toggleSidebar = () => {
     setSidebarOpen(prev => !prev);

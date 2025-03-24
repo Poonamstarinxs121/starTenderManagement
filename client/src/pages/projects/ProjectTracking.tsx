@@ -277,9 +277,10 @@ export default function ProjectTracking() {
       
       {/* Add Project Dialog */}
       <Dialog open={showAddProjectDialog} onOpenChange={setShowAddProjectDialog}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add New Project</DialogTitle>
+            <p className="text-sm text-gray-500 mt-1">Fill out the form below to create a new project</p>
           </DialogHeader>
           
           <ProjectForm 
