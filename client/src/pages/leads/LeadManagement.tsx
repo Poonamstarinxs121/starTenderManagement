@@ -239,7 +239,7 @@ export default function LeadManagement() {
       
       {/* Add Lead Dialog */}
       <Dialog open={showAddLeadDialog} onOpenChange={setShowAddLeadDialog}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add New Lead</DialogTitle>
           </DialogHeader>
