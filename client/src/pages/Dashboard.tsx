@@ -1,9 +1,22 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ContactIcon, FileTextIcon, ConstructionIcon, TrendingUpIcon } from 'lucide-react';
+import { 
+  ContactIcon, 
+  FileTextIcon, 
+  ConstructionIcon, 
+  TrendingUpIcon, 
+  PieChart, 
+  BarChart3, 
+  DollarSign, 
+  Target,
+  Clock,
+  Calendar,
+  CheckCircle,
+  XCircle
+} from 'lucide-react';
 
 import StatsCard from '@/components/dashboard/StatsCard';
 import BidPerformanceChart from '@/components/dashboard/BidPerformanceChart';
@@ -11,7 +24,7 @@ import RecentActivity from '@/components/dashboard/RecentActivity';
 import OngoingProjectsTable from '@/components/dashboard/OngoingProjectsTable';
 import DocumentUploadModal from '@/components/modals/DocumentUploadModal';
 
-import { Activity, Project } from '@shared/schema';
+import { Activity, Project, Tender, Lead } from '@shared/schema';
 
 export default function Dashboard() {
   const [, navigate] = useLocation();
