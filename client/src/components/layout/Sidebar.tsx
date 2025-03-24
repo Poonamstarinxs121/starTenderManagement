@@ -9,7 +9,8 @@ import {
   FolderOpen, 
   Briefcase, 
   FileText, 
-  UserCheck 
+  UserCheck,
+  FileSpreadsheet 
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -43,11 +44,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   const sidebarLinks = [
     { href: '/', icon: 'dashboard', iconComponent: LayoutDashboard, label: 'Dashboard', section: 'Main' },
-    { href: '/leads', icon: 'contact_page', iconComponent: UserCheck, label: 'Lead Management', section: 'Business' },
-    { href: '/tenders', icon: 'description', iconComponent: FileText, label: 'Tender Management', section: 'Business' },
-    { href: '/projects', icon: 'engineering', iconComponent: Briefcase, label: 'Project Tracking', section: 'Business' },
-    { href: '/documents', icon: 'folder', iconComponent: FolderOpen, label: 'Document Management', section: 'Business' },
-    { href: '/users', icon: 'people', iconComponent: Users, label: 'User Management', section: 'Administration' },
+    { href: '/documents', icon: 'folder', iconComponent: FolderOpen, label: 'Document Management', section: 'Main' },
+    { href: '/leads', icon: 'users', iconComponent: UserCheck, label: 'Lead Management', section: 'Business' },
+    { href: '/tenders', icon: 'file-text', iconComponent: FileSpreadsheet, label: 'Tender Management', section: 'Business' },
+    { href: '/projects', icon: 'briefcase', iconComponent: Briefcase, label: 'Project Tracking', section: 'Business' },
+    { href: '/users', icon: 'users', iconComponent: Users, label: 'User Management', section: 'Administration' },
     { href: '/settings', icon: 'settings', iconComponent: Settings, label: 'Settings', section: 'Administration' },
   ];
 
@@ -55,6 +56,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-md transition-transform duration-300 
     ${isOpen ? 'translate-x-0' : '-translate-x-full'} 
     lg:translate-x-0 lg:static lg:z-0
+    overflow-y-auto
   `;
 
   return (
@@ -82,8 +84,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           </div>
         </div>
         
-        <div className="flex flex-col h-[calc(100%-64px)]">
-          <div className="flex-1 overflow-y-auto py-4">
+        <div className="flex flex-col h-auto min-h-[calc(100%-64px)]">
+          <div className="py-4">
             {/* Group sidebar links by section */}
             {['Main', 'Business', 'Administration'].map(section => {
               const sectionLinks = sidebarLinks.filter(link => link.section === section);
