@@ -30,7 +30,7 @@ export function Header({ onMenuClick }: HeaderProps) {
         <div className="flex items-center">
           <button 
             onClick={onMenuClick}
-            className="mr-2 text-gray-600 lg:hidden"
+            className="mr-2 text-gray-600"
           >
             <Menu size={24} />
           </button>

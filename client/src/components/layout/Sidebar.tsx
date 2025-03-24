@@ -1,6 +1,16 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'wouter';
 import useMobile from '@/lib/hooks/useMobile';
+import { 
+  X, 
+  LayoutDashboard, 
+  Users, 
+  Settings, 
+  FolderOpen, 
+  Briefcase, 
+  FileText, 
+  UserCheck 
+} from 'lucide-react';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -32,18 +42,18 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   }, [isMobile, isOpen]);
 
   const sidebarLinks = [
-    { href: '/', icon: 'dashboard', label: 'Dashboard', section: 'Main' },
-    { href: '/leads', icon: 'contact_page', label: 'Lead Management', section: 'Business' },
-    { href: '/tenders', icon: 'description', label: 'Tender Management', section: 'Business' },
-    { href: '/projects', icon: 'engineering', label: 'Project Tracking', section: 'Business' },
-    { href: '/documents', icon: 'folder', label: 'Document Management', section: 'Business' },
-    { href: '/users', icon: 'people', label: 'User Management', section: 'Administration' },
-    { href: '/settings', icon: 'settings', label: 'Settings', section: 'Administration' },
+    { href: '/', icon: 'dashboard', iconComponent: LayoutDashboard, label: 'Dashboard', section: 'Main' },
+    { href: '/leads', icon: 'contact_page', iconComponent: UserCheck, label: 'Lead Management', section: 'Business' },
+    { href: '/tenders', icon: 'description', iconComponent: FileText, label: 'Tender Management', section: 'Business' },
+    { href: '/projects', icon: 'engineering', iconComponent: Briefcase, label: 'Project Tracking', section: 'Business' },
+    { href: '/documents', icon: 'folder', iconComponent: FolderOpen, label: 'Document Management', section: 'Business' },
+    { href: '/users', icon: 'people', iconComponent: Users, label: 'User Management', section: 'Administration' },
+    { href: '/settings', icon: 'settings', iconComponent: Settings, label: 'Settings', section: 'Administration' },
   ];
 
   const sidebarClasses = `
     fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-md transition-transform duration-300 
-    ${isOpen || !isMobile ? 'translate-x-0' : '-translate-x-full'} 
+    ${isOpen ? 'translate-x-0' : '-translate-x-full'} 
     lg:translate-x-0 lg:static lg:z-0
   `;
 
@@ -66,7 +76,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 onClick={onClose}
                 className="text-gray-500 hover:text-gray-700"
               >
-                <span className="material-icons">close</span>
+                <X size={20} />
               </button>
             )}
           </div>
@@ -98,8 +108,13 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                           ${isActive ? 'bg-blue-50 border-l-3 border-primary' : ''}
                         `}
                       >
-                        <span className={`material-icons mr-3 ${isActive ? 'text-primary' : 'text-gray-600'}`}>
-                          {link.icon}
+                        <span className="mr-3">
+                          {link.iconComponent && 
+                            <link.iconComponent 
+                              size={18} 
+                              className={isActive ? 'text-primary' : 'text-gray-600'} 
+                            />
+                          }
                         </span>
                         {link.label}
                       </Link>
@@ -114,7 +129,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           <div className="border-t border-gray-200 p-4">
             <div className="flex items-center">
               <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center mr-3">
-                <span className="material-icons text-sm text-gray-600">person</span>
+                <Users size={16} className="text-gray-600" />
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-700">John Doe</p>

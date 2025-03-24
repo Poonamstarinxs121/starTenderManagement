@@ -1,15 +1,25 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import useMobile from '@/lib/hooks/useMobile';
 
 interface MainLayoutProps {
   children: React.ReactNode;
 }
 
 export function MainLayout({ children }: MainLayoutProps) {
-  // Initialize sidebar as open for desktop, closed for mobile
-  const isMobile = window.innerWidth < 1024;
+  const isMobile = useMobile();
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
+
+  // Update sidebar state when screen size changes
+  useEffect(() => {
+    // Keep sidebar open on desktop, close on mobile
+    if (!isMobile && !sidebarOpen) {
+      setSidebarOpen(true);
+    } else if (isMobile && sidebarOpen) {
+      setSidebarOpen(false);
+    }
+  }, [isMobile, sidebarOpen]);
   
   const toggleSidebar = () => {
     setSidebarOpen(prev => !prev);
