@@ -1,0 +1,168 @@
+I want to make one Tender document management application i am sharing module wise description
+Module 1: Document Management
+Upload KYC
+
+Update KYC documents as needed
+
+Add bid-specific documents
+
+Attach supporting documents to bids
+
+Module 2: Lead Management
+Add lead
+
+Lead Name * Text Box
+Client Name : (Dropdown)
+Contact Info.
+Phone No. : Text box
+Email Id: Text box
+
+Lead Status Dropdown
+New
+In Progress
+Closed
+Manage Lead:
+
+5 minutes ago
+PA
+
+poonam7
+I want to make one Tender document management application i am sharing module wise description
+Module 1: Document Management
+Upload KYC
+
+Update KYC documents as needed
+
+Add bid-specific documents
+
+Attach supporting documents to bids
+
+Module 2: Lead Management
+Add lead
+
+Lead Name * Text Box
+Client Name : (Dropdown)
+Contact Info.
+Phone No. : Text box
+Email Id: Text box
+
+Lead Status Dropdown
+New
+In Progress
+Closed
+
+Manage Lead:
+
+Search by Name or Status
+
+Edit Lead Details
+
+Convert to Bid
+
+Connect Wth Client:
+Select Lead (Dropdown)
+Assign to User/client (Dropdown)
+
+Track lead Status
+Lead Status Dropdown
+
+New	
+In Progress
+Submitted
+Awarded
+Lost
+
+Tender Start Date Tender End Date
+
+Proposal submission Date
+
+Evalution Status Dropdown
+Under Review
+Shortlisted
+Rejected
+
+Conversion Status Won
+Lost
+Pending
+
+Win/Loss Reason ...Dropdown...
+Price
+Experience
+Documentation
+Competitor
+Other
+
+1 minute ago
+PA
+
+poonam7
+4 minutes ago
+PA
+
+poonam7
+I want to make one Tender document management application i am sharing module wise description
+Module 1: Document Management
+Upload KYC
+
+Update KYC documents as needed
+
+Add bid-specific documents
+
+Attach supporting documents to bids
+
+Module 2: Lead Management
+Add lead
+
+Lead Name * Text Box
+Client Name : (Dropdown)
+Contact Info.
+Phone No. : Text box
+Email Id: Text box
+
+Lead Status Dropdown
+New
+In Progress
+Closed
+
+Manage Lead:
+
+Search by Name or Status
+
+Edit Lead Details
+
+Convert to Bid
+
+Connect Wth Client:
+Select Lead (Dropdown)
+Assign to User/client (Dropdown)
+
+Track lead Status
+Lead Status Dropdown
+
+New
+In Progress
+Submitted
+Awarded
+Lost
+
+Tender Start Date Tender End Date
+
+Proposal submission Date
+
+Evalution Status Dropdown
+Under Review
+Shortlisted
+Rejected
+
+Conversion Status Won
+Lost
+Pending
+
+Win/Loss Reason ...Dropdown...
+Price
+Experience
+Documentation
+Competitor
+Other
+
+Linke Lead to bid participation
