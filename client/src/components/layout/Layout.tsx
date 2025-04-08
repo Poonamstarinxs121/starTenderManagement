@@ -6,70 +6,107 @@ import {
   Factory,
   Users,
   FileText,
-  FolderOpen,
-  UserCircle,
-  FileCheck2
+  FileStack,
+  Target,
 } from "lucide-react";
+import { cn } from "../../lib/utils";
+import { Outlet } from "react-router-dom";
 
-const navigation = [
-  { name: "Dashboard", href: "/", icon: LayoutDashboard },
-  { name: "Companies", href: "/companies", icon: Building2 },
-  { name: "OEM", href: "/oem", icon: Factory },
-  { name: "Customer", href: "/customers", icon: Users },
-  { name: "Lead", href: "/leads", icon: FileText },
-  { name: "Document Management", href: "/documents", icon: FolderOpen },
-  { name: "User", href: "/users", icon: UserCircle },
-  { name: "Project", href: "/projects", icon: FileCheck2 },
-];
-
-interface LayoutProps {
-  children: React.ReactNode;
-}
-
-const Layout: React.FC<LayoutProps> = ({ children }) => {
+const Layout = () => {
   const location = useLocation();
+  
+  const navigation = [
+    {
+      name: "Dashboard",
+      href: "/",
+      icon: LayoutDashboard,
+    },
+    {
+      name: "Companies",
+      href: "/companies",
+      icon: Building2,
+    },
+    {
+      name: "OEMs",
+      href: "/oems",
+      icon: Factory,
+    },
+    {
+      name: "Customers",
+      href: "/customers",
+      icon: Users,
+    },
+    {
+      name: "Leads",
+      href: "/leads",
+      icon: Target,
+    },
+    {
+      name: "Document Management",
+      href: "/documents",
+      icon: FileText,
+    },
+    {
+      name: "Tender Management",
+      href: "/tenders",
+      icon: FileStack,
+    }
+  ];
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="flex h-screen">
-        {/* Sidebar */}
-        <div className="w-64 bg-white shadow-lg">
-          <div className="h-16 flex items-center px-6">
-            <h1 className="text-xl font-semibold text-gray-800">StarTender</h1>
+    <div className="min-h-screen">
+      {/* Header with yellow wave background */}
+      <div className="relative bg-gradient-to-b from-yellow-300 to-yellow-100">
+        <div className="absolute inset-0" style={{
+          backgroundImage: "url('/wave.svg')",
+          backgroundSize: "cover",
+          backgroundPosition: "bottom",
+          opacity: 0.5
+        }} />
+        <div className="relative px-4 sm:px-6 lg:px-8">
+          <div className="flex h-20 items-center">
+            <div className="flex items-center">
+              <img
+                className="h-12 w-auto"
+                src="/logo.svg"
+                alt="StarTenderManagement"
+              />
+              <h1 className="ml-4 text-3xl font-bold text-gray-900">StarTenderManagement</h1>
+            </div>
           </div>
-          <nav className="mt-4">
-            <ul className="space-y-2">
-              {navigation.map((item) => {
-                const isActive = location.pathname === item.href;
-                return (
-                  <li key={item.name}>
-                    <Link
-                      to={item.href}
-                      className={`flex items-center px-6 py-3 text-sm font-medium transition-colors ${
-                        isActive
-                          ? "bg-blue-50 text-blue-600"
-                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                      }`}
-                    >
-                      <item.icon
-                        className={`mr-3 h-5 w-5 ${
-                          isActive ? "text-blue-600" : "text-gray-400"
-                        }`}
-                      />
-                      {item.name}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
+        </div>
+      </div>
+
+      <div className="flex">
+        {/* Sidebar */}
+        <div className="w-64 bg-white border-r border-gray-200 min-h-[calc(100vh-5rem)]">
+          <nav className="flex flex-col p-4 gap-1">
+            {navigation.map((item) => {
+              const isActive = location.pathname === item.href;
+              return (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                    isActive
+                      ? "bg-gray-100 text-gray-900"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  )}
+                >
+                  <item.icon className="h-5 w-5" />
+                  {item.name}
+                </Link>
+              );
+            })}
           </nav>
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 overflow-auto">
-          <div className="p-8">
-            {children}
-          </div>
+        <div className="flex-1 min-h-[calc(100vh-5rem)] bg-gray-50">
+          <main className="p-6">
+            <Outlet />
+          </main>
         </div>
       </div>
     </div>

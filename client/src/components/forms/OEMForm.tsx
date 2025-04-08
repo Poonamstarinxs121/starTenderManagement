@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -17,78 +17,134 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Bold,
-  Italic,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  AlignJustify,
-  Link,
-  List,
-  ListOrdered,
-  Undo,
-  Image,
-  Upload
-} from "lucide-react";
-import {
-  ToggleGroup,
-  ToggleGroupItem,
-} from "@/components/ui/toggle-group";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+const indianCities = [
+  "Mumbai",
+  "Delhi",
+  "Bangalore",
+  "Hyderabad",
+  "Chennai",
+  "Kolkata",
+  "Pune",
+  "Ahmedabad",
+  "Jaipur",
+  "Surat",
+  "Lucknow",
+  "Kanpur",
+  "Nagpur",
+  "Indore",
+  "Thane",
+  "Bhopal",
+  "Visakhapatnam",
+  "Vadodara",
+  "Ghaziabad",
+];
+
+const indianStates = [
+  "Andhra Pradesh",
+  "Arunachal Pradesh",
+  "Assam",
+  "Bihar",
+  "Chhattisgarh",
+  "Goa",
+  "Gujarat",
+  "Haryana",
+  "Himachal Pradesh",
+  "Jharkhand",
+  "Karnataka",
+  "Kerala",
+  "Madhya Pradesh",
+  "Maharashtra",
+  "Manipur",
+  "Meghalaya",
+  "Mizoram",
+  "Nagaland",
+  "Odisha",
+  "Punjab",
+  "Rajasthan",
+  "Sikkim",
+  "Tamil Nadu",
+  "Telangana",
+  "Tripura",
+  "Uttar Pradesh",
+  "Uttarakhand",
+  "West Bengal",
+];
+
+const documentTypes = [
+  "Invoice",
+  "Contract",
+  "Certificate",
+  "License",
+  "Registration",
+  "Other"
+];
 
 const oemFormSchema = z.object({
-  oemId: z.string().min(1, "OEM ID is required"),
-  oemName: z.string().min(1, "OEM name is required"),
-  contactPerson: z.string().min(1, "Contact person is required"),
-  email: z.string().email("Invalid email address"),
+  vendorId: z.string().min(1, "Vendor ID is required"),
+  companyName: z.string().min(1, "Company name is required"),
+  contactPerson: z.string().min(1, "Contact person name is required"),
   phone: z.string().min(1, "Phone number is required"),
+  email: z.string().email("Invalid email address"),
   address: z.string().min(1, "Address is required"),
   city: z.string().min(1, "City is required"),
   state: z.string().min(1, "State is required"),
-  country: z.string().min(1, "Country is required"),
-  pincode: z.string().min(1, "Pincode is required"),
-  website: z.string().url("Invalid website URL").optional(),
+  pinCode: z.string().min(6, "Pin code must be 6 digits").max(6, "Pin code must be 6 digits"),
   status: z.string().min(1, "Status is required"),
-  category: z.string().min(1, "Category is required"),
-  description: z.string().optional(),
-  documentType: z.string().optional(),
-  documentCategory: z.string().optional(),
-  documentFile: z.any().optional(),
 });
 
 type OEMFormValues = z.infer<typeof oemFormSchema>;
 
 interface OEMFormProps {
   onSubmit: (data: OEMFormValues) => void;
-  initialData?: Partial<OEMFormValues>;
+  onCancel: () => void;
+  initialData?: OEMFormValues;
 }
 
-const OEMForm: React.FC<OEMFormProps> = ({ onSubmit, initialData }) => {
+const OEMForm: React.FC<OEMFormProps> = ({ onSubmit, onCancel, initialData }) => {
+  const [openCity, setOpenCity] = useState(false);
+  const [openState, setOpenState] = useState(false);
+  const [showDocumentForm, setShowDocumentForm] = useState(false);
+  const [documentName, setDocumentName] = useState("");
+  const [documentType, setDocumentType] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
   const form = useForm<OEMFormValues>({
     resolver: zodResolver(oemFormSchema),
-    defaultValues: {
-      oemId: initialData?.oemId || "",
-      oemName: initialData?.oemName || "",
-      contactPerson: initialData?.contactPerson || "",
-      email: initialData?.email || "",
-      phone: initialData?.phone || "",
-      address: initialData?.address || "",
-      city: initialData?.city || "",
-      state: initialData?.state || "",
-      country: initialData?.country || "",
-      pincode: initialData?.pincode || "",
-      website: initialData?.website || "",
-      status: initialData?.status || "",
-      category: initialData?.category || "",
-      description: initialData?.description || "",
-      documentType: "",
-      documentCategory: "KYC Documents",
-      documentFile: null,
+    defaultValues: initialData || {
+      vendorId: "",
+      companyName: "",
+      contactPerson: "",
+      phone: "",
+      email: "",
+      address: "",
+      city: "",
+      state: "",
+      pinCode: "",
+      status: "",
     },
   });
+
+  const handleFormSubmit = (data: OEMFormValues) => {
+    onSubmit(data);
+  };
 
   const statuses = [
     "Active",
@@ -97,339 +153,386 @@ const OEMForm: React.FC<OEMFormProps> = ({ onSubmit, initialData }) => {
     "Blacklisted"
   ];
 
-  const categories = [
-    "Hardware",
-    "Software",
-    "Network Equipment",
-    "Security Systems",
-    "IoT Devices",
-    "Other"
-  ];
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedFile(e.target.files[0]);
+    }
+  };
 
-  const documentTypes = [
-    "Company Registration",
-    "Business License",
-    "Tax Registration",
-    "Financial Statement",
-    "Bank Statement",
-    "Utility Bill",
-    "ID Card",
-    "Passport",
-    "Address Proof",
-    "Other"
-  ];
-
-  const documentCategories = [
-    "KYC Documents",
-    "Company Documents",
-    "Financial Documents",
-    "Legal Documents",
-    "Other Documents"
-  ];
+  const handleAddDocument = () => {
+    if (documentType && selectedFile) {
+      console.log("Adding document:", {
+        type: documentType,
+        file: selectedFile
+      });
+      setDocumentType("");
+      setSelectedFile(null);
+      setShowDocumentForm(false);
+    }
+  };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="relative">
-        <div className="max-h-[calc(100vh-12rem)] overflow-y-auto px-6 py-4">
-          <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-6">
-              <FormField
-                control={form.control}
-                name="oemId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>OEM ID</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter OEM ID" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+    <div className="max-w-xl mx-auto p-6">
+      <div className="flex justify-between items-center mb-8">
+        <h2 className="text-xl font-normal">Add new OEM</h2>
+        <Button
+          type="button"
+          variant="outline"
+          className="border border-gray-300 rounded-md px-6 py-2"
+          onClick={() => setShowDocumentForm(!showDocumentForm)}
+        >
+          <span className="text-xl font-normal">Upload Document</span>
+        </Button>
+      </div>
 
-              <FormField
-                control={form.control}
-                name="oemName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>OEM Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter OEM name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="contactPerson"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Contact Person</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter contact person" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input placeholder="contact@company.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="phone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Phone</FormLabel>
-                    <FormControl>
-                      <Input placeholder="+1 (555) 000-0000" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {statuses.map((status) => (
-                          <SelectItem key={status} value={status}>
-                            {status}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+      {showDocumentForm && (
+        <div className="mb-8 p-4 border border-gray-200 rounded-lg">
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-normal mb-1">Document Type*</label>
+              <Select value={documentType} onValueChange={setDocumentType}>
+                <SelectTrigger className="w-full rounded border-gray-300 h-10">
+                  <SelectValue placeholder="Select document type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {documentTypes.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            <div className="col-span-2">
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Enter OEM description"
-                        className="min-h-[100px]"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-6">
-              <FormField
-                control={form.control}
-                name="website"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Website</FormLabel>
-                    <FormControl>
-                      <Input placeholder="https://example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="address"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Address</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter company address" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="city"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>City</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter city" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="state"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>State</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter state" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="country"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Country</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter country" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="col-span-2 mt-8 border-t pt-8">
-              <h3 className="text-lg font-semibold mb-6">Document Upload</h3>
-              
-              <div className="grid grid-cols-2 gap-6 mb-6">
-                <FormField
-                  control={form.control}
-                  name="documentType"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Document Type</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select document type" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {documentTypes.map((type) => (
-                            <SelectItem key={type} value={type}>
-                              {type}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+            <div>
+              <label className="block text-sm font-normal mb-1">Upload File*</label>
+              <div className="flex gap-4">
+                <Input
+                  type="file"
+                  onChange={handleFileChange}
+                  className="flex-1 rounded border-gray-300 h-10"
                 />
-
-                <FormField
-                  control={form.control}
-                  name="documentCategory"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Category</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select category" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {documentCategories.map((category) => (
-                            <SelectItem key={category} value={category}>
-                              {category}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <Button
+                  type="button"
+                  onClick={handleAddDocument}
+                  disabled={!documentType || !selectedFile}
+                  className="bg-gray-500 hover:bg-gray-600 text-white whitespace-nowrap px-6"
+                >
+                  Add Document
+                </Button>
               </div>
+            </div>
 
-              <FormField
-                control={form.control}
-                name="documentFile"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Upload File</FormLabel>
-                    <FormControl>
-                      <div className="border-2 border-dashed rounded-lg p-8 text-center hover:border-primary cursor-pointer">
-                        <input
-                          type="file"
-                          id="file-upload"
-                          className="hidden"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            field.onChange(file);
-                          }}
-                          accept=".pdf,.doc,.docx,.jpg,.png"
-                        />
-                        <label
-                          htmlFor="file-upload"
-                          className="cursor-pointer flex flex-col items-center"
-                        >
-                          <Upload className="h-10 w-10 text-gray-400 mb-2" />
-                          <span className="text-gray-600">
-                            Click to upload or drag and drop
-                          </span>
-                          <span className="text-sm text-gray-500 mt-1">
-                            PDF, DOC, DOCX, JPG or PNG (MAX. 5MB)
-                          </span>
-                        </label>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <div className="flex justify-end gap-4 pt-4">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => {
+                  setShowDocumentForm(false);
+                  setDocumentType("");
+                  setSelectedFile(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button type="button" className="bg-black text-white hover:bg-gray-800">
+                Save
+              </Button>
             </div>
           </div>
         </div>
+      )}
 
-        <div className="flex justify-end sticky bottom-0 bg-white border-t py-4 px-6">
-          <Button type="submit">Save</Button>
-        </div>
-      </form>
-    </Form>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
+          <FormField
+            control={form.control}
+            name="vendorId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-sm font-medium">Vendor ID*</FormLabel>
+                <FormControl>
+                  <Input 
+                    placeholder="Enter vendor ID" 
+                    {...field} 
+                    className="rounded border-gray-300 h-10"
+                  />
+                </FormControl>
+                <FormMessage className="text-red-500 text-xs" />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="companyName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-sm font-medium">Company Name*</FormLabel>
+                <FormControl>
+                  <Input 
+                    placeholder="Enter company name" 
+                    {...field} 
+                    className="rounded border-gray-300 h-10"
+                  />
+                </FormControl>
+                <FormMessage className="text-red-500 text-xs" />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="contactPerson"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-sm font-medium">Contact Person Name*</FormLabel>
+                <FormControl>
+                  <Input 
+                    placeholder="Enter contact person name" 
+                    {...field} 
+                    className="rounded border-gray-300 h-10"
+                  />
+                </FormControl>
+                <FormMessage className="text-red-500 text-xs" />
+              </FormItem>
+            )}
+          />
+
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-medium">Phone No.*</FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder="Enter phone number" 
+                      {...field} 
+                      className="rounded border-gray-300 h-10"
+                    />
+                  </FormControl>
+                  <FormMessage className="text-red-500 text-xs" />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-medium">Email ID*</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="email"
+                      placeholder="Enter email address" 
+                      {...field} 
+                      className="rounded border-gray-300 h-10"
+                    />
+                  </FormControl>
+                  <FormMessage className="text-red-500 text-xs" />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <FormField
+            control={form.control}
+            name="address"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-sm font-medium">Address*</FormLabel>
+                <FormControl>
+                  <Textarea 
+                    placeholder="Enter address" 
+                    className="resize-none rounded border-gray-300 h-20"
+                    {...field} 
+                  />
+                </FormControl>
+                <FormMessage className="text-red-500 text-xs" />
+              </FormItem>
+            )}
+          />
+
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="city"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-medium">City*</FormLabel>
+                  <Popover open={openCity} onOpenChange={setOpenCity}>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          className={cn(
+                            "w-full justify-between",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {field.value
+                            ? indianCities.find(
+                                (city) => city === field.value
+                              )
+                            : "Select city"}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0">
+                      <Command>
+                        <CommandInput placeholder="Search city..." />
+                        <CommandEmpty>No city found.</CommandEmpty>
+                        <CommandGroup>
+                          {indianCities.map((city) => (
+                            <CommandItem
+                              value={city}
+                              key={city}
+                              onSelect={() => {
+                                form.setValue("city", city);
+                                setOpenCity(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  city === field.value
+                                    ? "opacity-100"
+                                    : "opacity-0"
+                                )}
+                              />
+                              {city}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  <FormMessage className="text-red-500 text-xs" />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="state"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-medium">State*</FormLabel>
+                  <Popover open={openState} onOpenChange={setOpenState}>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          className={cn(
+                            "w-full justify-between",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {field.value
+                            ? indianStates.find(
+                                (state) => state === field.value
+                              )
+                            : "Select state"}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0">
+                      <Command>
+                        <CommandInput placeholder="Search state..." />
+                        <CommandEmpty>No state found.</CommandEmpty>
+                        <CommandGroup>
+                          {indianStates.map((state) => (
+                            <CommandItem
+                              value={state}
+                              key={state}
+                              onSelect={() => {
+                                form.setValue("state", state);
+                                setOpenState(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  state === field.value
+                                    ? "opacity-100"
+                                    : "opacity-0"
+                                )}
+                              />
+                              {state}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  <FormMessage className="text-red-500 text-xs" />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <FormField
+            control={form.control}
+            name="pinCode"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-sm font-medium">Pin Code*</FormLabel>
+                <FormControl>
+                  <Input 
+                    placeholder="Enter pin code" 
+                    maxLength={6}
+                    {...field} 
+                    className="rounded border-gray-300 h-10"
+                  />
+                </FormControl>
+                <FormMessage className="text-red-500 text-xs" />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="status"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-sm font-medium">Status*</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {statuses.map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {status}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage className="text-red-500 text-xs" />
+              </FormItem>
+            )}
+          />
+
+          <div className="flex justify-end gap-4 pt-6">
+            <Button type="button" variant="outline" onClick={onCancel}>
+              Cancel
+            </Button>
+            <Button type="submit" className="bg-black text-white hover:bg-gray-800">
+              Save
+            </Button>
+          </div>
+        </form>
+      </Form>
+    </div>
   );
 };
 

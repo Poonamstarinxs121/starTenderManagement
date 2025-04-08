@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { useForm } from "react-hook-form";
-import * as z from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Form,
   FormControl,
@@ -9,7 +9,6 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription,
 } from "@/components/ui/form";
 import {
   Select,
@@ -20,273 +19,235 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent } from "@/components/ui/card";
+import { X, Upload } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-const ACCEPTED_FILE_TYPES = [
-  "application/pdf",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "image/jpeg",
-  "image/png"
+const documentTypes = [
+  "Invoice",
+  "Contract",
+  "Certificate",
+  "License",
+  "Registration",
+  "Other"
 ];
 
-const documentFormSchema = z.object({
-  title: z.string().min(1, "Document title is required"),
-  description: z.string().optional(),
+const documentUploadSchema = z.object({
+  companyId: z.string().min(1, "Company selection is required"),
+  documentName: z.string().min(1, "Document name is required"),
   documentType: z.string().min(1, "Document type is required"),
-  category: z.string().min(1, "Category is required"),
-  file: z
-    .any()
-    .refine((file) => file?.size <= MAX_FILE_SIZE, "Max file size is 5MB")
-    .refine(
-      (file) => ACCEPTED_FILE_TYPES.includes(file?.type),
-      "Only PDF, DOC, DOCX, JPG or PNG files are accepted"
-    ),
+  file: z.instanceof(FileList).refine((files) => files.length > 0, {
+    message: "Please select a file",
+  }),
 });
 
-type DocumentFormValues = z.infer<typeof documentFormSchema>;
+type DocumentUploadFormValues = z.infer<typeof documentUploadSchema>;
 
 interface DocumentUploadFormProps {
-  onSubmit: (data: DocumentFormValues) => void;
-  onCancel: () => void;
+  onSubmit: (data: { companyId: string; documentName: string; documentType: string; file: File }) => void;
 }
 
-const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({
-  onSubmit,
-  onCancel,
-}) => {
-  const [dragActive, setDragActive] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+const DocumentUploadForm: React.FC<DocumentUploadFormProps> = ({ onSubmit }) => {
+  const [selectedCompany, setSelectedCompany] = useState<string>("");
+  const [documents, setDocuments] = useState<Array<{ id: string; name: string; type: string; uploadDate: string }>>([]);
 
-  const form = useForm<DocumentFormValues>({
-    resolver: zodResolver(documentFormSchema),
+  const form = useForm<DocumentUploadFormValues>({
+    resolver: zodResolver(documentUploadSchema),
     defaultValues: {
-      title: "",
-      description: "",
+      companyId: "",
+      documentName: "",
       documentType: "",
-      category: "KYC Documents",
     },
   });
 
-  const documentTypes = [
-    "Company Registration",
-    "Business License",
-    "Tax Registration",
-    "Financial Statement",
-    "Bank Statement",
-    "Utility Bill",
-    "ID Card",
-    "Passport",
-    "Address Proof",
-    "Other"
-  ];
+  // Fetch companies
+  const { data: companies = [] } = useQuery({
+    queryKey: ['/api/companies'],
+    select: (data) => data.map((company: any) => ({
+      id: company.id,
+      name: company.name
+    }))
+  });
 
-  const categories = [
-    "KYC Documents",
-    "Company Documents",
-    "Financial Documents",
-    "Legal Documents",
-    "Other Documents"
-  ];
+  // Fetch documents when company is selected
+  const { data: companyDocuments = [] } = useQuery({
+    queryKey: ['/api/documents', { companyId: selectedCompany }],
+    enabled: !!selectedCompany,
+    select: (data) => data.map((doc: any) => ({
+      id: doc.id,
+      name: doc.name,
+      type: doc.type,
+      uploadDate: new Date(doc.uploadedAt).toLocaleDateString()
+    }))
+  });
 
-  const handleDrag = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
+  const handleCompanyChange = (companyId: string) => {
+    setSelectedCompany(companyId);
+    form.setValue("companyId", companyId);
+  };
+
+  const handleSubmit = (data: DocumentUploadFormValues) => {
+    if (data.file.length > 0) {
+      onSubmit({
+        companyId: data.companyId,
+        documentName: data.documentName,
+        documentType: data.documentType,
+        file: data.file[0],
+      });
+      form.reset();
     }
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFile(e.dataTransfer.files[0]);
-    }
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    e.preventDefault();
-    if (e.target.files && e.target.files[0]) {
-      handleFile(e.target.files[0]);
-    }
-  };
-
-  const handleFile = (file: File) => {
-    setSelectedFile(file);
-    form.setValue("file", file);
-  };
-
-  const handleSubmit = (data: DocumentFormValues) => {
-    onSubmit({ ...data, file: selectedFile });
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold">Upload Document</h2>
-          <p className="text-sm text-gray-500">
-            Upload documents such as KYC forms, tender documents, contracts, etc.
-          </p>
-        </div>
-
-        <FormField
-          control={form.control}
-          name="title"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Document Title</FormLabel>
-              <FormControl>
-                <Input placeholder="Enter document title" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Textarea 
-                  placeholder="Enter document description"
-                  className="resize-none h-24"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="grid grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="documentType"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Document Type</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select document type" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {documentTypes.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="category"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Category</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {category}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <FormField
-          control={form.control}
-          name="file"
-          render={({ field: { onChange, ...field } }) => (
-            <FormItem>
-              <FormLabel>Upload File</FormLabel>
-              <FormControl>
-                <div
-                  className={`border-2 border-dashed rounded-lg p-8 text-center ${
-                    dragActive ? "border-blue-500 bg-blue-50" : "border-gray-300"
-                  }`}
-                  onDragEnter={handleDrag}
-                  onDragLeave={handleDrag}
-                  onDragOver={handleDrag}
-                  onDrop={handleDrop}
-                >
-                  <input
-                    type="file"
-                    id="file-upload"
-                    className="hidden"
-                    accept=".pdf,.doc,.docx,.jpg,.png"
-                    onChange={handleChange}
-                    {...field}
-                  />
-                  <label
-                    htmlFor="file-upload"
-                    className="cursor-pointer flex flex-col items-center"
-                  >
-                    <svg
-                      className="w-12 h-12 text-gray-400 mb-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 gap-6">
+        {/* Left side - Upload Form */}
+        <div className="space-y-6">
+          <h2 className="text-xl font-semibold">Upload Document</h2>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+              <FormField
+                control={form.control}
+                name="companyId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Select Company*</FormLabel>
+                    <Select 
+                      onValueChange={(value) => handleCompanyChange(value)} 
+                      value={field.value}
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                      />
-                    </svg>
-                    <span className="text-gray-600">
-                      {selectedFile ? selectedFile.name : "Click to upload"} or drag and drop
-                    </span>
-                    <span className="text-sm text-gray-500 mt-1">
-                      PDF, DOC, DOCX, JPG or PNG (MAX. 5MB)
-                    </span>
-                  </label>
-                </div>
-              </FormControl>
-              <FormDescription>
-                Upload a document file. Max size 5MB.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a company" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {companies.map((company: { id: string; name: string }) => (
+                          <SelectItem key={company.id} value={company.id}>
+                            {company.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-        <div className="flex justify-end gap-4">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button type="submit" className="bg-blue-600 text-white">
-            Upload Document
-          </Button>
+              <FormField
+                control={form.control}
+                name="documentName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Document Name*</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter document name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="documentType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Document Type*</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select document type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {documentTypes.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {type}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="file"
+                render={({ field: { value, onChange, ...field } }) => (
+                  <FormItem>
+                    <FormLabel>Upload File*</FormLabel>
+                    <FormControl>
+                      <div className="flex items-center">
+                        <Input
+                          type="file"
+                          onChange={(e) => {
+                            if (e.target.files) {
+                              onChange(e.target.files);
+                            }
+                          }}
+                          {...field}
+                          className="file:mr-4 file:py-2 file:px-4 
+                                   file:rounded-full file:border-0 
+                                   file:text-sm file:bg-gray-100 
+                                   file:text-gray-700 hover:file:bg-gray-200"
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <Button type="submit" className="w-full">
+                Upload Document
+              </Button>
+            </form>
+          </Form>
         </div>
-      </form>
-    </Form>
+
+        {/* Right side - Document List */}
+        <div className="space-y-6">
+          <h2 className="text-xl font-semibold">Company Documents</h2>
+          <Card>
+            <CardContent className="p-4">
+              {selectedCompany ? (
+                companyDocuments.length > 0 ? (
+                  <div className="space-y-4">
+                    {companyDocuments.map((doc) => (
+                      <div
+                        key={doc.id}
+                        className="flex items-center justify-between p-3 border rounded-lg"
+                      >
+                        <div>
+                          <p className="font-medium">{doc.name}</p>
+                          <p className="text-sm text-gray-500">
+                            Type: {doc.type} • Uploaded: {doc.uploadDate}
+                          </p>
+                        </div>
+                        <Button variant="ghost" size="sm">
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    No documents found for this company
+                  </div>
+                )
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  Select a company to view documents
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
   );
 };
 
