@@ -40,7 +40,7 @@ import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 
 import LeadForm from '@/components/forms/LeadForm';
-import { Lead, InsertLead } from '@shared/schema';
+import { Lead, InsertLead, Company } from '@shared/schema';
 
 export default function LeadManagement() {
   const [, navigate] = useLocation();
@@ -52,6 +52,11 @@ export default function LeadManagement() {
   // Fetch all leads
   const { data: leads = [], isLoading } = useQuery<Lead[]>({
     queryKey: ['/api/leads'],
+  });
+  
+  // Fetch all companies
+  const { data: companies = [] } = useQuery<Company[]>({
+    queryKey: ['/api/companies'],
   });
   
   // Create lead mutation
@@ -239,7 +244,7 @@ export default function LeadManagement() {
       
       {/* Add Lead Dialog */}
       <Dialog open={showAddLeadDialog} onOpenChange={setShowAddLeadDialog}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Add New Lead</DialogTitle>
           </DialogHeader>
@@ -247,7 +252,7 @@ export default function LeadManagement() {
           <LeadForm 
             onSubmit={createLead}
             isLoading={isCreating}
-            buttonText="Create Lead"
+            companies={companies}
           />
         </DialogContent>
       </Dialog>

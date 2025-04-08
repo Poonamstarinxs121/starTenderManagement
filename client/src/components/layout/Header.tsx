@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -15,8 +15,19 @@ interface HeaderProps {
   onMenuClick: () => void;
 }
 
-export function Header({ onMenuClick }: HeaderProps) {
+const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [isScrolled, setIsScrolled] = useState(false);
+  
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY;
+      setIsScrolled(scrollPosition > 0);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
   
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,7 +36,9 @@ export function Header({ onMenuClick }: HeaderProps) {
   };
   
   return (
-    <header className="sticky top-0 z-30 bg-white shadow-sm">
+    <header className={`sticky top-0 z-30 transition-colors duration-200 ${
+      isScrolled ? 'bg-white/95 backdrop-blur-sm shadow-sm' : 'bg-white'
+    }`}>
       <div className="flex items-center justify-between p-4">
         <div className="flex items-center">
           <button 

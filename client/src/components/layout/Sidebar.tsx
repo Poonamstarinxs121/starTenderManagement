@@ -8,7 +8,8 @@ import {
   FolderOpen, 
   Briefcase, 
   FileText, 
-  UserCheck 
+  UserCheck,
+  Building2
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -17,12 +18,14 @@ interface SidebarProps {
 }
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
-  const [location] = useLocation();
+  const [, location] = useLocation();
+  const currentPath = location as unknown as string;
   
   // Simple list of navigation links
   const navLinks = [
     { path: '/', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
     { path: '/leads', label: 'Lead Management', icon: <UserCheck size={20} /> },
+    { path: '/oems', label: 'OEM Management', icon: <Building2 size={20} /> },
     { path: '/tenders', label: 'Tender Management', icon: <FileText size={20} /> },
     { path: '/projects', label: 'Project Tracking', icon: <Briefcase size={20} /> },
     { path: '/documents', label: 'Document Management', icon: <FolderOpen size={20} /> },
@@ -64,9 +67,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         <nav className="p-2">
           <ul className="space-y-1">
             {navLinks.map((link) => {
-              const isActive = 
-                location === link.path || 
-                (link.path !== '/' && location.startsWith(link.path));
+              const isActive = link.path === '/' 
+                ? currentPath === link.path
+                : currentPath.startsWith(link.path);
                 
               return (
                 <li key={link.path}>
@@ -90,14 +93,14 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         </nav>
         
         {/* User profile */}
-        <div className="absolute bottom-0 left-0 right-0 border-t p-4 bg-white">
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-              <Users size={20} className="text-gray-600" />
+            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+              <span className="text-sm font-medium text-gray-600">JD</span>
             </div>
-            <div>
-              <p className="font-medium">Administrator</p>
-              <p className="text-sm text-gray-500">John Doe</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-900 truncate">John Doe</p>
+              <p className="text-xs text-gray-500 truncate">john.doe@example.com</p>
             </div>
           </div>
         </div>

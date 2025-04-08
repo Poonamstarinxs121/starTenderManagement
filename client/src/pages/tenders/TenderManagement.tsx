@@ -27,6 +27,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { 
   DropdownMenu, 
@@ -47,7 +48,7 @@ export default function TenderManagement() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [showAddTenderDialog, setShowAddTenderDialog] = useState(false);
+  const [showAddDialog, setShowAddDialog] = useState(false);
   
   // Fetch all tenders
   const { data: tenders = [], isLoading } = useQuery<Tender[]>({
@@ -62,7 +63,7 @@ export default function TenderManagement() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tenders'] });
-      setShowAddTenderDialog(false);
+      setShowAddDialog(false);
       toast({
         title: 'Tender created',
         description: 'New tender has been successfully created',
@@ -105,15 +106,15 @@ export default function TenderManagement() {
   };
   
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-800">Tender Management</h1>
-          <p className="text-gray-600">Manage bids and tender opportunities</p>
+          <h1 className="text-2xl font-semibold text-gray-800">Bid Management</h1>
+          <p className="text-gray-600">Manage and track all bids</p>
         </div>
-        <Button onClick={() => setShowAddTenderDialog(true)}>
+        <Button onClick={() => setShowAddDialog(true)}>
           <PlusCircle className="mr-2 h-4 w-4" />
-          Add Tender
+          Create New Bid
         </Button>
       </div>
       
@@ -277,16 +278,19 @@ export default function TenderManagement() {
       </Card>
       
       {/* Add Tender Dialog */}
-      <Dialog open={showAddTenderDialog} onOpenChange={setShowAddTenderDialog}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+        <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Add New Tender</DialogTitle>
+            <DialogTitle>Create New Bid</DialogTitle>
+            <DialogDescription>
+              Fill out the form below to create a new bid. All required fields are marked with an asterisk (*).
+            </DialogDescription>
           </DialogHeader>
           
           <TenderForm 
             onSubmit={createTender}
             isLoading={isCreating}
-            buttonText="Create Tender"
+            buttonText="Create Bid"
           />
         </DialogContent>
       </Dialog>

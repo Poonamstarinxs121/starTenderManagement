@@ -41,6 +41,20 @@ import { formatDate, formatFileSize, getFileIcon } from '@/lib/utils';
 import DocumentUploadModal from '@/components/modals/DocumentUploadModal';
 import DocumentForm from '@/components/forms/DocumentForm';
 import { Document, Lead, Project, Tender } from '@shared/schema';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
+// Add a helper function for formatting status text
+const formatStatus = (status: string | null | undefined): string => {
+  if (!status) return 'Unknown';
+  return status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ');
+};
 
 export default function DocumentManagement() {
   const { toast } = useToast();
@@ -50,6 +64,8 @@ export default function DocumentManagement() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDocumentDetails, setShowDocumentDetails] = useState(false);
+  const [selectedDocumentForView, setSelectedDocumentForView] = useState<Document | null>(null);
   
   // Fetch all documents
   const { data: documents = [], isLoading } = useQuery<Document[]>({
@@ -127,9 +143,17 @@ export default function DocumentManagement() {
     return matchesSearch && matchesType && matchesStatus;
   });
   
-  // Unique document types and statuses for filters
-  const types = ['all', ...new Set(documents.map(doc => doc.type))];
-  const statuses = ['all', ...new Set(documents.map(doc => doc.status))];
+  // Get unique document types and statuses for filters
+  const types = ['all', ...documents
+    .map(doc => doc.type)
+    .filter((type, index, self) => self.indexOf(type) === index)
+  ];
+  
+  const statuses = ['all', ...documents
+    .map(doc => doc.status)
+    .filter(Boolean)
+    .filter((status, index, self) => self.indexOf(status) === index)
+  ];
   
   // Get related entity name
   const getRelatedEntityName = (doc: Document) => {
@@ -159,6 +183,23 @@ export default function DocumentManagement() {
     ];
     
     return options;
+  };
+  
+  const handleDocumentClick = (doc: Document) => {
+    setSelectedDocumentForView(doc);
+    setShowDocumentDetails(true);
+  };
+  
+  // Update Badge variants
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case 'approved':
+        return 'default';
+      case 'rejected':
+        return 'destructive';
+      default:
+        return 'outline';
+    }
   };
   
   return (
@@ -219,7 +260,7 @@ export default function DocumentManagement() {
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="w-full sm:w-auto">
               <Filter className="mr-2 h-4 w-4" />
-              Status: {statusFilter === 'all' ? 'All' : statusFilter}
+              Filter
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -237,7 +278,7 @@ export default function DocumentManagement() {
                   className={statusFilter === status ? 'bg-muted' : ''}
                   onClick={() => setStatusFilter(status)}
                 >
-                  {status.charAt(0).toUpperCase() + status.slice(1)}
+                  {formatStatus(status)}
                 </DropdownMenuItem>
               ))}
           </DropdownMenuContent>
@@ -292,7 +333,11 @@ export default function DocumentManagement() {
                   const isPending = doc.status === 'pending';
                   
                   return (
-                    <TableRow key={doc.id}>
+                    <TableRow 
+                      key={doc.id}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => handleDocumentClick(doc)}
+                    >
                       <TableCell>
                         <div className="flex items-center space-x-3">
                           <div className="bg-gray-100 p-2 rounded">
@@ -308,14 +353,8 @@ export default function DocumentManagement() {
                       <TableCell>{getRelatedEntityName(doc)}</TableCell>
                       <TableCell>{formatDate(doc.uploadedAt)}</TableCell>
                       <TableCell>
-                        <Badge variant={
-                          doc.status === 'approved' 
-                            ? 'success' 
-                            : doc.status === 'rejected' 
-                            ? 'destructive' 
-                            : 'outline'
-                        }>
-                          {doc.status.charAt(0).toUpperCase() + doc.status.slice(1)}
+                        <Badge variant={getStatusBadgeVariant(doc.status)}>
+                          {formatStatus(doc.status)}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -323,7 +362,8 @@ export default function DocumentManagement() {
                           <Button 
                             variant="outline" 
                             size="sm"
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setSelectedDocument(doc);
                               setShowEditDialog(true);
                             }}
@@ -341,7 +381,10 @@ export default function DocumentManagement() {
                                 variant="outline"
                                 size="sm"
                                 className="text-green-600"
-                                onClick={() => updateStatus({ id: doc.id, status: 'approved' })}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  updateStatus({ id: doc.id, status: 'approved' });
+                                }}
                               >
                                 <Check className="h-4 w-4" />
                               </Button>
@@ -350,7 +393,10 @@ export default function DocumentManagement() {
                                 variant="outline"
                                 size="sm"
                                 className="text-red-600"
-                                onClick={() => updateStatus({ id: doc.id, status: 'rejected' })}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  updateStatus({ id: doc.id, status: 'rejected' });
+                                }}
                               >
                                 <X className="h-4 w-4" />
                               </Button>
@@ -406,6 +452,129 @@ export default function DocumentManagement() {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Document Details Sheet */}
+      <Sheet open={showDocumentDetails} onOpenChange={setShowDocumentDetails}>
+        <SheetContent className="w-[400px] sm:w-[540px]">
+          <SheetHeader>
+            <SheetTitle>Document Details</SheetTitle>
+            <SheetDescription>
+              View and manage document information
+            </SheetDescription>
+          </SheetHeader>
+
+          <ScrollArea className="h-[calc(100vh-200px)] pr-4">
+            {selectedDocumentForView && (
+              <div className="space-y-6 py-6">
+                {/* Document Preview */}
+                <div className="flex items-center justify-center p-4 bg-muted rounded-lg">
+                  <FileIcon className="h-20 w-20 text-gray-500" />
+                </div>
+
+                {/* Document Information */}
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-medium mb-2">Basic Information</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Title</p>
+                        <p className="font-medium">{selectedDocumentForView.title}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Type</p>
+                        <p className="font-medium">{selectedDocumentForView.type}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Size</p>
+                        <p className="font-medium">{formatFileSize(selectedDocumentForView.fileSize)}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Status</p>
+                        <Badge variant={getStatusBadgeVariant(selectedDocumentForView.status)}>
+                          {formatStatus(selectedDocumentForView.status)}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="font-medium mb-2">Related Information</h3>
+                    <div className="space-y-2">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Related To</p>
+                        <p className="font-medium">{getRelatedEntityName(selectedDocumentForView)}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Upload Date</p>
+                        <p className="font-medium">{formatDate(selectedDocumentForView.uploadedAt)}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {selectedDocumentForView.description && (
+                    <div>
+                      <h3 className="font-medium mb-2">Description</h3>
+                      <p className="text-sm">{selectedDocumentForView.description}</p>
+                    </div>
+                  )}
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-2 pt-4">
+                    <Button 
+                      variant="outline" 
+                      className="flex-1"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedDocument(selectedDocumentForView);
+                        setShowEditDialog(true);
+                      }}
+                    >
+                      <Pencil className="h-4 w-4 mr-2" />
+                      Edit
+                    </Button>
+                    <Button variant="outline" className="flex-1">
+                      <DownloadCloud className="h-4 w-4 mr-2" />
+                      Download
+                    </Button>
+                    {selectedDocumentForView.status === 'pending' && (
+                      <>
+                        <Button 
+                          variant="outline"
+                          className="flex-1 text-green-600"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            updateStatus({ 
+                              id: selectedDocumentForView.id, 
+                              status: 'approved' 
+                            });
+                          }}
+                        >
+                          <Check className="h-4 w-4 mr-2" />
+                          Approve
+                        </Button>
+                        <Button 
+                          variant="outline"
+                          className="flex-1 text-red-600"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            updateStatus({ 
+                              id: selectedDocumentForView.id, 
+                              status: 'rejected' 
+                            });
+                          }}
+                        >
+                          <X className="h-4 w-4 mr-2" />
+                          Reject
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </ScrollArea>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

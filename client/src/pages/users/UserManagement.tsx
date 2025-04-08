@@ -50,6 +50,23 @@ import { useToast } from '@/hooks/use-toast';
 
 import UserForm from '@/components/forms/UserForm';
 import { User } from '@shared/schema';
+import AuditLogs from '@/components/AuditLogs';
+
+// Add permission display helper
+const getPermissionDisplay = (permissions: Record<string, boolean> | null | undefined) => {
+  if (!permissions) return 'No permissions';
+  
+  const activePermissions = Object.entries(permissions)
+    .filter(([_, value]) => value)
+    .map(([key]) => key.split('.')[0]);
+  
+  // Get unique values without using Set
+  const uniquePermissions = activePermissions.filter((value, index, self) => 
+    self.indexOf(value) === index
+  );
+  
+  return uniquePermissions.join(', ') || 'No permissions';
+};
 
 export default function UserManagement() {
   const { toast } = useToast();
@@ -60,10 +77,23 @@ export default function UserManagement() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeactivateDialog, setShowDeactivateDialog] = useState(false);
+  const [showAuditLogs, setShowAuditLogs] = useState(false);
+  const [selectedUserForLogs, setSelectedUserForLogs] = useState<User | null>(null);
   
   // Fetch all users
   const { data: users = [], isLoading } = useQuery<User[]>({
     queryKey: ['/api/users'],
+  });
+  
+  // Add audit log mutation
+  const { mutate: createAuditLog } = useMutation({
+    mutationFn: async (logData: { userId: string; action: string; resourceId: string; description: string }) => {
+      const res = await apiRequest('POST', '/api/audit-logs', logData);
+      return res.json();
+    },
+    onError: (error) => {
+      console.error('Failed to create audit log:', error);
+    },
   });
   
   // Create user mutation
@@ -72,9 +102,18 @@ export default function UserManagement() {
       const res = await apiRequest('POST', '/api/users', newUser);
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
       setShowAddUserDialog(false);
+      
+      // Log the action
+      createAuditLog({
+        userId: data.userId,
+        action: 'CREATE_USER',
+        resourceId: data.id.toString(),
+        description: `Created new user: ${data.fullName} (${data.username})`,
+      });
+      
       toast({
         title: 'User created',
         description: 'New user has been successfully created',
@@ -95,9 +134,18 @@ export default function UserManagement() {
       const res = await apiRequest('PATCH', `/api/users/${id}`, userData);
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
       setShowEditDialog(false);
+      
+      // Log the action
+      createAuditLog({
+        userId: data.userId,
+        action: 'UPDATE_USER',
+        resourceId: data.id.toString(),
+        description: `Updated user: ${data.fullName} (${data.username})`,
+      });
+      
       toast({
         title: 'User updated',
         description: 'User has been successfully updated',
@@ -118,12 +166,21 @@ export default function UserManagement() {
       const res = await apiRequest('PATCH', `/api/users/${id}`, { active });
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
       setShowDeactivateDialog(false);
+      
+      // Log the action
+      createAuditLog({
+        userId: data.userId,
+        action: data.active ? 'ACTIVATE_USER' : 'DEACTIVATE_USER',
+        resourceId: data.id.toString(),
+        description: `${data.active ? 'Activated' : 'Deactivated'} user: ${data.fullName} (${data.username})`,
+      });
+      
       toast({
-        title: `User ${selectedUser?.active ? 'deactivated' : 'activated'}`,
-        description: `User has been successfully ${selectedUser?.active ? 'deactivated' : 'activated'}`,
+        title: `User ${data.active ? 'activated' : 'deactivated'}`,
+        description: `User has been successfully ${data.active ? 'activated' : 'deactivated'}`,
       });
     },
     onError: (error) => {
@@ -178,16 +235,21 @@ export default function UserManagement() {
   };
   
   return (
-    <div>
+    <div className="space-y-6">
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-semibold text-gray-800">User Management</h1>
           <p className="text-gray-600">Manage system users and their permissions</p>
         </div>
-        <Button onClick={() => setShowAddUserDialog(true)}>
-          <UserPlus className="mr-2 h-4 w-4" />
-          Add User
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowAuditLogs(true)}>
+            View Audit Logs
+          </Button>
+          <Button onClick={() => setShowAddUserDialog(true)}>
+            <UserPlus className="mr-2 h-4 w-4" />
+            Add User
+          </Button>
+        </div>
       </div>
       
       {/* Search and filter bar */}
@@ -274,10 +336,12 @@ export default function UserManagement() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>User ID</TableHead>
                 <TableHead>User</TableHead>
                 <TableHead>Username</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
+                <TableHead>Permissions</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -287,6 +351,7 @@ export default function UserManagement() {
                 // Loading skeletons
                 Array.from({ length: 5 }).map((_, index) => (
                   <TableRow key={index}>
+                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-3">
                         <Skeleton className="h-10 w-10 rounded-full" />
@@ -296,6 +361,7 @@ export default function UserManagement() {
                     <TableCell><Skeleton className="h-5 w-24" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-36" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-16" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-24" /></TableCell>
                   </TableRow>
@@ -304,6 +370,7 @@ export default function UserManagement() {
                 // User rows
                 filteredUsers.map((user) => (
                   <TableRow key={user.id}>
+                    <TableCell>{user.userId}</TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-3">
                         <Avatar>
@@ -318,7 +385,12 @@ export default function UserManagement() {
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{getRoleDisplay(user.role)}</TableCell>
                     <TableCell>
-                      <Badge variant={user.active ? 'success' : 'outline'}>
+                      <Badge variant="outline">
+                        {getPermissionDisplay(user.permissions as Record<string, boolean>)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={user.active ? 'default' : 'outline'}>
                         {user.active ? 'Active' : 'Inactive'}
                       </Badge>
                     </TableCell>
@@ -353,7 +425,7 @@ export default function UserManagement() {
               ) : (
                 // Empty state
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                     No users found. Try adjusting your search or filters.
                   </TableCell>
                 </TableRow>
@@ -429,6 +501,16 @@ export default function UserManagement() {
           </AlertDialogContent>
         </AlertDialog>
       )}
+
+      {/* Audit Logs Dialog */}
+      <Dialog open={showAuditLogs} onOpenChange={setShowAuditLogs}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Audit Logs</DialogTitle>
+          </DialogHeader>
+          <AuditLogs userId={selectedUserForLogs?.userId} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
