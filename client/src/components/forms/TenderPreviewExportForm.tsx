@@ -6,6 +6,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Download } from "lucide-react";
+import { toast } from "sonner";
 
 interface TenderPreviewExportFormProps {
   basicDetails: any;
@@ -18,6 +20,55 @@ const TenderPreviewExportForm: React.FC<TenderPreviewExportFormProps> = ({
   documentSets,
   onBack,
 }) => {
+  const handleExport = () => {
+    try {
+      // Create CSV content for basic details
+      const basicDetailsContent = [
+        ['Basic Details'],
+        ['Field', 'Value'],
+        ['Participating Company', basicDetails?.participatingCompany || ''],
+        ['Tender Name', basicDetails?.tenderName || ''],
+        ['Tender ID', basicDetails?.tenderId || ''],
+        ['Client Name', basicDetails?.clientName || ''],
+        ['Delivery Location', basicDetails?.deliveryLocation || ''],
+        ['Publish Date', basicDetails?.publishDate || ''],
+        ['End Date', basicDetails?.endDate || ''],
+        [], // Empty row for separation
+        ['Document Sets'],
+        ['Set Name', 'Company', 'Number of Documents', 'Tags']
+      ];
+
+      // Add document sets data
+      documentSets.forEach(set => {
+        basicDetailsContent.push([
+          set.documentSetName,
+          set.participatingCompany,
+          set.documents.length.toString(),
+          set.tags.join(', ')
+        ]);
+      });
+
+      // Convert to CSV string
+      const csvContent = basicDetailsContent
+        .map(row => row.map(cell => `"${cell}"`).join(','))
+        .join('\n');
+
+      // Create and download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `tender-${basicDetails?.tenderId || 'export'}-${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success('Export completed successfully');
+    } catch (error) {
+      toast.error('Failed to export data');
+      console.error('Export error:', error);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="space-y-4">
@@ -28,24 +79,32 @@ const TenderPreviewExportForm: React.FC<TenderPreviewExportFormProps> = ({
           <CardContent>
             <dl className="grid grid-cols-2 gap-4">
               <div>
-                <dt className="font-medium">Star</dt>
-                <dd>{basicDetails?.star}</dd>
+                <dt className="font-medium">Participating Company</dt>
+                <dd>{basicDetails?.participatingCompany}</dd>
               </div>
               <div>
-                <dt className="font-medium">Sport</dt>
-                <dd>{basicDetails?.sport}</dd>
+                <dt className="font-medium">Tender Name</dt>
+                <dd>{basicDetails?.tenderName}</dd>
               </div>
               <div>
-                <dt className="font-medium">Tender Number</dt>
-                <dd>{basicDetails?.tenderNumber}</dd>
+                <dt className="font-medium">Tender ID</dt>
+                <dd>{basicDetails?.tenderId}</dd>
               </div>
               <div>
-                <dt className="font-medium">Organization</dt>
-                <dd>{basicDetails?.organization}</dd>
+                <dt className="font-medium">Client Name</dt>
+                <dd>{basicDetails?.clientName}</dd>
               </div>
               <div>
-                <dt className="font-medium">Location</dt>
-                <dd>{basicDetails?.location}</dd>
+                <dt className="font-medium">Delivery Location</dt>
+                <dd>{basicDetails?.deliveryLocation}</dd>
+              </div>
+              <div>
+                <dt className="font-medium">Publish Date</dt>
+                <dd>{basicDetails?.publishDate}</dd>
+              </div>
+              <div>
+                <dt className="font-medium">End Date</dt>
+                <dd>{basicDetails?.endDate}</dd>
               </div>
             </dl>
           </CardContent>
@@ -94,7 +153,12 @@ const TenderPreviewExportForm: React.FC<TenderPreviewExportFormProps> = ({
         <Button type="button" variant="outline" onClick={onBack} className="w-full">
           Back
         </Button>
-        <Button type="button" className="w-full">
+        <Button 
+          type="button" 
+          className="w-full flex items-center justify-center gap-2"
+          onClick={handleExport}
+        >
+          <Download className="h-4 w-4" />
           Export
         </Button>
       </div>

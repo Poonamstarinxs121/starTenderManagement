@@ -96,14 +96,8 @@ const TenderManagementPage = () => {
   };
 
   const handleTabChange = (value: string) => {
-    // Allow navigation between tabs if conditions are met
-    if (value === "document-upload" && formData.basicDetails) {
-      setActiveTab(value);
-    } else if (value === "preview-export" && formData.documentSets.length > 0) {
-      setActiveTab(value);
-    } else if (value === "basic-details") {
-      setActiveTab(value);
-    }
+    // Allow navigation between tabs without conditions
+    setActiveTab(value);
   };
 
   return (
@@ -123,16 +117,10 @@ const TenderManagementPage = () => {
               <TabsTrigger value="basic-details">
                 Basic Details
               </TabsTrigger>
-              <TabsTrigger 
-                value="document-upload"
-                disabled={!formData.basicDetails}
-              >
+              <TabsTrigger value="document-upload">
                 Document Upload
               </TabsTrigger>
-              <TabsTrigger 
-                value="preview-export"
-                disabled={formData.documentSets.length === 0}
-              >
+              <TabsTrigger value="preview-export">
                 Preview & Export
               </TabsTrigger>
             </TabsList>
