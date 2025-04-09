@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Select,
   SelectContent,
@@ -17,8 +17,18 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { FileText, Download, Eye, Plus } from "lucide-react";
+import { FileText, Download, Eye, Plus, Upload } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 
 interface Company {
   id: string;
@@ -35,6 +45,11 @@ interface Document {
 
 const DocumentsPage = () => {
   const [selectedCompany, setSelectedCompany] = useState<string>("");
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [documentName, setDocumentName] = useState("");
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   // Fetch companies
   const { data: companies = [] } = useQuery<Company[]>({
@@ -47,12 +62,90 @@ const DocumentsPage = () => {
     enabled: !!selectedCompany,
   });
 
+  // Upload document mutation
+  const uploadMutation = useMutation({
+    mutationFn: async (formData: FormData) => {
+      const response = await fetch('/api/documents/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      if (!response.ok) throw new Error('Upload failed');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/documents'] });
+      toast.success('Document uploaded successfully');
+      setIsUploadDialogOpen(false);
+      setSelectedFile(null);
+      setDocumentName("");
+    },
+    onError: () => {
+      toast.error('Failed to upload document');
+    },
+  });
+
   const handleCompanyChange = (companyId: string) => {
     setSelectedCompany(companyId);
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      // Create preview URL for PDFs and images
+      if (file.type === 'application/pdf' || file.type.startsWith('image/')) {
+        setPreviewUrl(URL.createObjectURL(file));
+      } else {
+        setPreviewUrl(null);
+      }
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFile || !selectedCompany || !documentName) {
+      toast.error('Please fill in all fields');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+    formData.append('companyId', selectedCompany);
+    formData.append('name', documentName);
+    formData.append('type', selectedFile.type);
+
+    uploadMutation.mutate(formData);
+  };
+
   const handleDownload = (fileUrl: string) => {
     window.open(fileUrl, '_blank');
+  };
+
+  const handlePreview = (fileUrl: string) => {
+    window.open(fileUrl, '_blank');
+  };
+
+  const handleExport = () => {
+    if (documents.length === 0) {
+      toast.error('No documents to export');
+      return;
+    }
+
+    // Create CSV content
+    const csvContent = [
+      ['Document Name', 'Type', 'Upload Date'],
+      ...documents.map(doc => [doc.name, doc.type, formatDate(doc.uploadDate)])
+    ].map(row => row.join(',')).join('\n');
+
+    // Create and download CSV file
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `documents-${selectedCompany}-${formatDate(new Date())}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
   };
 
   return (
@@ -61,10 +154,68 @@ const DocumentsPage = () => {
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">Documents Management</h1>
         </div>
-        <Button className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
-          Upload Document
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={handleExport}
+            disabled={!selectedCompany || documents.length === 0}
+          >
+            Export
+          </Button>
+          <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                Upload Document
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Upload Document</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="documentName">Document Name</Label>
+                  <Input
+                    id="documentName"
+                    value={documentName}
+                    onChange={(e) => setDocumentName(e.target.value)}
+                    placeholder="Enter document name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="file">File</Label>
+                  <Input
+                    id="file"
+                    type="file"
+                    onChange={handleFileChange}
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                  />
+                </div>
+                {previewUrl && (
+                  <div className="mt-4">
+                    <Label>Preview</Label>
+                    <div className="mt-2 border rounded-md p-4">
+                      {selectedFile?.type === 'application/pdf' ? (
+                        <iframe src={previewUrl} className="w-full h-64" />
+                      ) : (
+                        <img src={previewUrl} alt="Preview" className="max-h-64 mx-auto" />
+                      )}
+                    </div>
+                  </div>
+                )}
+                <Button 
+                  className="w-full" 
+                  onClick={handleUpload}
+                  disabled={!selectedFile || !selectedCompany || !documentName}
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <Card>
@@ -72,7 +223,10 @@ const DocumentsPage = () => {
           <div className="space-y-6">
             {/* Company Selection */}
             <div className="max-w-md">
-              <Select onValueChange={handleCompanyChange} value={selectedCompany}>
+              <Select 
+                onValueChange={(value: string) => handleCompanyChange(value)} 
+                value={selectedCompany}
+              >
                 <SelectTrigger className="h-10">
                   <SelectValue placeholder="Select company" />
                 </SelectTrigger>
@@ -116,7 +270,11 @@ const DocumentsPage = () => {
                             >
                               <Download className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="sm">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => handlePreview(doc.fileUrl)}
+                            >
                               <Eye className="h-4 w-4" />
                             </Button>
                           </div>
