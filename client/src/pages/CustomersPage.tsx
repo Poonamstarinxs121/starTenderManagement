@@ -16,50 +16,75 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { PlusCircle, Search } from "lucide-react";
+import { Plus, Search, Upload } from "lucide-react";
 import CustomerForm from "@/components/forms/CustomerForm";
+import CustomerDocumentUpload from "@/components/forms/CustomerDocumentUpload";
 
 const CustomersPage: React.FC = () => {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const handleSubmit = (data: any) => {
-    console.log("Customer data:", data);
-    setIsDialogOpen(false);
+  const handleAddCustomer = (data: any) => {
+    console.log("Adding customer:", data);
+    setIsAddDialogOpen(false);
+  };
+
+  const handleDocumentUpload = (documents: Array<{ type: string; file: File }>) => {
+    console.log("Uploading documents:", documents);
+    setIsUploadDialogOpen(false);
   };
 
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto py-6 space-y-6">
       <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-800">Customers</h1>
-          <p className="text-gray-600">Manage your customer information</p>
+        <h1 className="text-2xl font-bold">Customers</h1>
+        <div className="flex gap-4">
+          <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="flex items-center gap-2">
+                <Upload className="h-4 w-4" />
+                Upload Documents
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Upload Customer Documents</DialogTitle>
+              </DialogHeader>
+              <CustomerDocumentUpload onSave={handleDocumentUpload} />
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                Add Customer
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Add New Customer</DialogTitle>
+              </DialogHeader>
+              <CustomerForm
+                onSubmit={handleAddCustomer}
+                onCancel={() => setIsAddDialogOpen(false)}
+              />
+            </DialogContent>
+          </Dialog>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="flex items-center gap-2">
-              <PlusCircle className="h-4 w-4" />
-              Add Customer
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0">
-            <DialogHeader className="px-6 py-4 border-b sticky top-0 bg-white z-10">
-              <DialogTitle>Add New Customer</DialogTitle>
-            </DialogHeader>
-            <CustomerForm 
-              onSubmit={handleSubmit} 
-              onCancel={() => setIsDialogOpen(false)} 
-            />
-          </DialogContent>
-        </Dialog>
       </div>
 
-      <div className="relative">
-        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
-        <Input
-          type="search"
-          placeholder="Search customers..."
-          className="pl-8"
-        />
+      <div className="flex items-center gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+          <Input
+            placeholder="Search customers..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
       </div>
 
       <div className="bg-white rounded-lg shadow">

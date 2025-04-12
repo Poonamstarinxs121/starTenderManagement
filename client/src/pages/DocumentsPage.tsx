@@ -169,49 +169,71 @@ const DocumentsPage = () => {
                 Upload Document
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="sm:max-w-[600px]">
               <DialogHeader>
                 <DialogTitle>Upload Document</DialogTitle>
               </DialogHeader>
-              <div className="space-y-4 py-4">
+              <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="documentName">Document Name</Label>
+                  <Label>Select Company*</Label>
+                  <Select 
+                    onValueChange={(value: string) => handleCompanyChange(value)} 
+                    value={selectedCompany}
+                  >
+                    <SelectTrigger className="h-10">
+                      <SelectValue placeholder="Select company" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {companies.map((company) => (
+                        <SelectItem key={company.id} value={company.id}>
+                          {company.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Document Name*</Label>
                   <Input
-                    id="documentName"
+                    placeholder="Enter document name"
                     value={documentName}
                     onChange={(e) => setDocumentName(e.target.value)}
-                    placeholder="Enter document name"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="file">File</Label>
-                  <Input
-                    id="file"
-                    type="file"
-                    onChange={handleFileChange}
-                    accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
-                  />
+                  <Label>Document Type*</Label>
+                  <Select>
+                    <SelectTrigger className="h-10">
+                      <SelectValue placeholder="Select document type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="invoice">Invoice</SelectItem>
+                      <SelectItem value="contract">Contract</SelectItem>
+                      <SelectItem value="certificate">Certificate</SelectItem>
+                      <SelectItem value="license">License</SelectItem>
+                      <SelectItem value="registration">Registration</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                {previewUrl && (
-                  <div className="mt-4">
-                    <Label>Preview</Label>
-                    <div className="mt-2 border rounded-md p-4">
-                      {selectedFile?.type === 'application/pdf' ? (
-                        <iframe src={previewUrl} className="w-full h-64" />
-                      ) : (
-                        <img src={previewUrl} alt="Preview" className="max-h-64 mx-auto" />
-                      )}
-                    </div>
+                <div className="space-y-2">
+                  <Label>Upload File*</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="file"
+                      onChange={handleFileChange}
+                      className="flex-1"
+                      accept=".pdf,.doc,.docx,.xls,.xlsx"
+                    />
+                    <Button
+                      type="button"
+                      onClick={handleUpload}
+                      disabled={!selectedCompany || !documentName || !selectedFile}
+                    >
+                      Upload
+                    </Button>
                   </div>
-                )}
-                <Button 
-                  className="w-full" 
-                  onClick={handleUpload}
-                  disabled={!selectedFile || !selectedCompany || !documentName}
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  Upload
-                </Button>
+                </div>
               </div>
             </DialogContent>
           </Dialog>

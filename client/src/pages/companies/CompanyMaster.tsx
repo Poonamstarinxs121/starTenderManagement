@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { PlusCircle, Search, Edit, Trash2 } from 'lucide-react';
-
+import { endpoints } from '@/config/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -28,9 +28,9 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from '@/components/ui/skeleton';
-import { apiRequest, queryClient } from '@/lib/queryClient';
+import { queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
-import { Company, InsertCompany } from '@shared/schema';
+import { Company, InsertCompany } from '@/types/company';
 
 export default function CompanyMaster() {
   const { toast } = useToast();
@@ -47,17 +47,33 @@ export default function CompanyMaster() {
 
   // Fetch companies
   const { data: companies = [], isLoading } = useQuery<Company[]>({
-    queryKey: ['/api/companies'],
+    queryKey: ['companies'],
+    queryFn: async () => {
+      const response = await fetch(endpoints.companies);
+      if (!response.ok) {
+        throw new Error('Failed to fetch companies');
+      }
+      return response.json();
+    },
   });
 
   // Create company mutation
   const { mutate: createCompany } = useMutation({
     mutationFn: async (data: InsertCompany) => {
-      const res = await apiRequest('POST', '/api/companies', data);
-      return res.json();
+      const response = await fetch(endpoints.companies, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to create company');
+      }
+      return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/companies'] });
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
       setShowAddDialog(false);
       resetForm();
       toast({
@@ -77,11 +93,20 @@ export default function CompanyMaster() {
   // Update company mutation
   const { mutate: updateCompany } = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: InsertCompany }) => {
-      const res = await apiRequest('PUT', `/api/companies/${id}`, data);
-      return res.json();
+      const response = await fetch(`${endpoints.companies}/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to update company');
+      }
+      return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/companies'] });
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
       setShowAddDialog(false);
       setEditingCompany(null);
       resetForm();
@@ -102,11 +127,16 @@ export default function CompanyMaster() {
   // Delete company mutation
   const { mutate: deleteCompany } = useMutation({
     mutationFn: async (id: number) => {
-      const res = await apiRequest('DELETE', `/api/companies/${id}`);
-      return res.json();
+      const response = await fetch(`${endpoints.companies}/${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        throw new Error('Failed to delete company');
+      }
+      return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/companies'] });
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
       toast({
         title: 'Success',
         description: 'Company has been successfully deleted',

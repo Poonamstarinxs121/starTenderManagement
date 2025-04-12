@@ -8,6 +8,7 @@ import {
   FileText,
   FileStack,
   Target,
+  UserCog,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { Outlet } from "react-router-dom";
@@ -35,6 +36,11 @@ const Layout = () => {
       name: "Customers",
       href: "/customers",
       icon: Users,
+    },
+    {
+      name: "User Management",
+      href: "/users",
+      icon: UserCog,
     },
     {
       name: "Leads",
@@ -66,12 +72,7 @@ const Layout = () => {
         <div className="relative px-4 sm:px-6 lg:px-8">
           <div className="flex h-20 items-center">
             <div className="flex items-center">
-              <img
-                className="h-12 w-auto"
-                src="/logo.svg"
-                alt="StarTenderManagement"
-              />
-              <h1 className="ml-4 text-3xl font-bold text-gray-900">StarTenderManagement</h1>
+              <h1 className="text-2xl font-bold text-gray-900">StarTenderManagement</h1>
             </div>
           </div>
         </div>

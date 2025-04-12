@@ -63,20 +63,18 @@ const UserManagementForm: React.FC<UserManagementFormProps> = ({ onSubmit, onCan
   const roles = [
     "Admin",
     "Manager",
-    "Team Lead",
-    "Developer",
-    "Designer",
-    "QA Engineer"
+    "GEM Lead",
+    "Executive",
+    "Auditor",
   ];
 
   const departments = [
-    "Engineering",
-    "Design",
-    "Product",
-    "Marketing",
-    "Sales",
-    "HR",
-    "Operations"
+   "Defence",
+    "Textile",
+    "IT",
+    "Coal",
+    "Civil aviation",
+    "Commerece and Industry"
   ];
 
   return (
